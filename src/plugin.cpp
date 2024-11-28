@@ -50,6 +50,7 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	KnockoutExtensions::BleedoutStateHook::Install();
 	KnockoutExtensions::MainUpdateHook::Install();
 	KnockoutExtensions::HitEventHook::Install();
+	KnockoutExtensions::GetUpHook::Install(); 
 	
     return true;
 }

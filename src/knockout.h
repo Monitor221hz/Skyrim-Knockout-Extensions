@@ -50,7 +50,8 @@ namespace KnockoutExtensions
 
             static bool RecordSave(SKSE::SerializationInterface* serde, uint32_t a_type, uint32_t a_version);
             
-
+            static void InterruptAll(Actor* a_actor);
+            static void SetUnconsciousFlags(Actor *a_actor);
 
     };
 }

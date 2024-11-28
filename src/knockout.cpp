@@ -3,95 +3,79 @@
 
 namespace KnockoutExtensions
 {
+    void KnockoutHandler::InterruptAll(Actor *a_actor)
+    {
+        if (a_actor->IsInCombat())
+        {
+            a_actor->StopCombat();
+        }
+        a_actor->InterruptCast(false); 
+        a_actor->PauseCurrentDialogue(); 
+        a_actor->StopInteractingQuick(true);  
+    }
+    void KnockoutHandler::SetUnconsciousFlags(Actor* a_actor)
+    {
+        auto* actor_state = a_actor->AsActorState(); 
+        auto& rtd = a_actor->GetActorRuntimeData();
+        if (actor_state)
+        {
+            auto& state1 = actor_state->actorState1; 
+            state1.knockState = KNOCK_STATE_ENUM::kDown; 
+        }
+        rtd.boolFlags.set(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
+
+        a_actor->SetActivationBlocked(false);
+    }
     void KnockoutHandler::ApplyUnconscious(Actor *a_actor)
     {
         ReadLocker locker(actorLock);
         if (actorIDMap.count(a_actor->GetFormID()) > 0) { return; }
         locker.unlock();
-
-        if (a_actor->IsInCombat())
-        {
-            a_actor->StopCombat();
-        }
-        
+        InterruptAll(a_actor); 
         NiPoint3 actorPos = a_actor->GetPosition();
-        
         auto& rtd = a_actor->GetActorRuntimeData();
-        ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, 0.00000001f);
-
-        auto *avOwner = a_actor->AsActorValueOwner();
-        if (!avOwner)
-        {
-            return;
-        }
-        rtd.boolFlags.set(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
-
-        if (!a_actor->IsEssential())
-        {
-            rtd.boolBits.set(Actor::BOOL_BITS::kDead);
-        }
-
-        avOwner->SetActorValue(ActorValue::kParalysis, 1.0f);
-        a_actor->SetActivationBlocked(false);
+        ActorUtil::Physics::PushActorAway(rtd.currentProcess, a_actor, &actorPos, 0.00000001f);
+        SetUnconsciousFlags(a_actor); 
     }
     void KnockoutHandler::ApplyUnconscious(Actor *a_actor, Actor *a_causer)
     {
         ReadLocker locker(actorLock);
         if (actorIDMap.count(a_actor->GetFormID()) > 0) { return; }
         locker.unlock();
-
-        if (a_actor->IsInCombat())
-        {
-            a_actor->StopCombat();
-        }
         uint64_t witnessCount; 
+        auto& rtd = a_actor->GetActorRuntimeData();
         if (ActorUtil::Detection::GetHighestDetectionValue(a_causer, &witnessCount) > 0 && Settings::GetKnockoutIsCrime())
         {
             ActorUtil::Detection::SendAssaultAlarm(a_actor, a_causer, false);
+            rtd.boolBits.set(Actor::BOOL_BITS::kMurderAlarm);
         }
-        
-        auto& rtd = a_actor->GetActorRuntimeData();
-
-
+        InterruptAll(a_actor); 
         NiPoint3 actorPos = a_causer->GetPosition();
-        ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, 0.00000001f);
-
-        auto *avOwner = a_actor->AsActorValueOwner();
-        if (!avOwner)
-        {
-            return;
-        }
-
-        avOwner->SetActorValue(ActorValue::kParalysis, 1.0f);
-        // a_actor->AllowBleedoutDialogue(false);
-        rtd.boolFlags.set(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
-        rtd.boolBits.set(Actor::BOOL_BITS::kMurderAlarm);
-        if (a_actor->IsHostileToActor(a_causer) && !a_actor->IsEssential())
-        {
-            rtd.boolBits.set(Actor::BOOL_BITS::kDead);
-        }
-        
-
+        ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, 5.f);
+        SetUnconsciousFlags(a_actor); 
     }
     void KnockoutHandler::RecoverUnconscious(Actor *a_actor)
     {
-        auto *avOwner = a_actor->AsActorValueOwner();
-        if (!avOwner)
-        {
-            return;
-        }
-        avOwner->SetActorValue(ActorValue::kParalysis, 0.0f);
         auto& rtd = a_actor->GetActorRuntimeData();
         rtd.boolFlags.reset(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
         rtd.boolBits.reset(Actor::BOOL_BITS::kMurderAlarm);
-        rtd.boolBits.reset(Actor::BOOL_BITS::kDead);
-
-        if (a_actor->Is3DLoaded()) { a_actor->Update3DModel(); }
+   
+        auto* actor_state = a_actor->AsActorState(); 
+        if (actor_state)
+        {
+            auto& state1 = actor_state->actorState1; 
+            state1.knockState = KNOCK_STATE_ENUM::kGetUp; 
+        }
+        if (a_actor->Is3DLoaded()) 
+        { 
+            a_actor->Update3DModel(); 
+            a_actor->UpdateActor3DPosition(); 
+            NiPoint3 actorPos = a_actor->GetPosition();
+            ActorUtil::Physics::PushActorAway(rtd.currentProcess, a_actor, &actorPos, 0.00000001f);
+        }
     }
     void KnockoutHandler::TrackActor(Actor *a_actor)
     {
-       
-
         auto *calendar = Calendar::GetSingleton();
         if (!calendar)
         {
@@ -103,9 +87,6 @@ namespace KnockoutExtensions
         WriteLocker locker(actorLock); 
         actorIDMap.emplace(a_actor->GetFormID(), exactHoursPassed);
     }
-
-
-
     void KnockoutHandler::UpdateTrackedActors()
     {
         WriteLocker locker(actorLock);
@@ -141,7 +122,7 @@ namespace KnockoutExtensions
         actorIDMap.erase(a_actor->GetFormID());
     }
 
-        bool KnockoutHandler::GameSave(SKSE::SerializationInterface *serde)
+    bool KnockoutHandler::GameSave(SKSE::SerializationInterface *serde)
     {
         assert(serde); 
 

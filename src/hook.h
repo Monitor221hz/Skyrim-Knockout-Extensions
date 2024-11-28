@@ -98,18 +98,42 @@ class MainUpdateHook
         
         static inline uint32_t framesElapsed = 0; 
 };
-}
-
-class ActivateActorHook
+class GetUpHook
 {
-    public: 
+    public:
 
     static void Install()
     {
-        REL::Relocation<std::uintptr_t> ActorVtbl{ RE::VTABLE_Actor[0] }; 
+        REL::Relocation<std::uintptr_t> ActorVtbl { RE::VTABLE_Character[0] }; 
+        _InitiateGetUpPackage = ActorVtbl.write_vfunc(0xDE, InitiateGetUpPackage); 
 
-        
+        SKSE::log::info("Hook - Get up Installed"); 
+    }   
 
-    }
+    private:
+        static void InitiateGetUpPackage(Actor* actor); 
+        static inline REL::Relocation<decltype(InitiateGetUpPackage)> _InitiateGetUpPackage; 
+}; 
+
+class PlayerActivateHook
+{
+    public:
+
+        static void Install()
+        {
+            auto& trampoline = SKSE::GetTrampoline(); 
+            SKSE::AllocTrampoline(14);
+            REL::Relocation<std::uintptr_t> target{ REL::RelocationID( 39471, 40548 ), REL::Relocate(0x135, 0x10D)}; 
+            _ActivateRef = trampoline.write_call<5>(target.address(), ActivateRef);
+
+            SKSE::log::info("Activate Hook installed");
+        }
+    private:
+        static bool ActivateRef(TESObjectREFR* a_ref, TESObjectREFR* a_activate_trigger, uint8_t a_arg2, TESBoundObject* a_object, int32_t a_count, bool a_defaultProcessingOnly);
+        static inline REL::Relocation<decltype(ActivateRef)> _ActivateRef; 
+
 
 };
+}
+
+

@@ -88,4 +88,25 @@ namespace KnockoutExtensions
 
         return ret;
     }
+    void GetUpHook::InitiateGetUpPackage(Actor *actor)
+    {
+        auto* state = actor->AsActorState(); 
+        if (true) { return; }
+
+        _InitiateGetUpPackage(actor); 
+    }
+    bool PlayerActivateHook::ActivateRef(TESObjectREFR *a_ref, TESObjectREFR *a_activate_trigger, uint8_t a_arg2, TESBoundObject *a_object, int32_t a_count, bool a_defaultProcessingOnly)
+    {
+        if (auto* actor = a_ref->As<Actor>())
+        {
+            if (auto* actor_state = actor->AsActorState())
+            {
+                if (actor_state->GetLifeState() == ACTOR_LIFE_STATE::kUnconcious)
+                {
+                    
+                }
+            }
+        }
+        return _ActivateRef(a_ref, a_activate_trigger, a_arg2, a_object, a_count, a_defaultProcessingOnly); 
+    }
 }
