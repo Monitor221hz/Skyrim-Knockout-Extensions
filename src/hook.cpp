@@ -10,25 +10,26 @@ namespace KnockoutExtensions
     {
         if (!a_target || !a_hitData || a_target->GetFormType() != FormType::ActorCharacter || !a_hitData->flags.any(HitData::Flag::kBash)) { return _ProcessHitEvent(a_target, a_hitData); }
         
-        auto* target = a_target->As<Actor>();
-        if (target->IsPlayerRef()) { return; }
-        auto* targetState = target->AsActorState();
+        auto* target_actor = a_target->As<Actor>();
+        if (target_actor->IsPlayerRef() || !KnockoutHandler::CanPassOut(target_actor)) { return _ProcessHitEvent(a_target, a_hitData); }
+
+        auto* targetState = target_actor->AsActorState();
         bool inBleedout = targetState ? targetState->GetLifeState() == ACTOR_LIFE_STATE::kBleedout : false;
 
-        if (target->IsInCombat() && !inBleedout) { return _ProcessHitEvent(a_target, a_hitData); }
+        if (target_actor->IsInCombat() && !inBleedout) { return _ProcessHitEvent(a_target, a_hitData); }
 
         auto* attacker = a_hitData->aggressor.get().get();
         if (!attacker) { return _ProcessHitEvent(a_target, a_hitData); }
         
         bool arg2;
-        bool hasLOS = target->HasLineOfSight(attacker,arg2);
+        bool hasLOS = target_actor->HasLineOfSight(attacker,arg2);
 
 
         if ((hasLOS || !Settings::GetTriggerBackBash()) && (!inBleedout || !Settings::GetTriggerBleedoutBash())) { return _ProcessHitEvent(a_target, a_hitData); }
 
-        target->SetLifeState(ACTOR_LIFE_STATE::kUnconcious);
-        KnockoutHandler::ApplyUnconscious(target, attacker);
-        KnockoutHandler::TrackActor(target);
+        target_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious);
+        KnockoutHandler::ApplyUnconscious(target_actor, attacker);
+        KnockoutHandler::TrackActor(target_actor);
         a_hitData->totalDamage = 0.0f;
 
         a_hitData->flags.set(HitData::Flag::kSneakAttack);
@@ -103,7 +104,7 @@ namespace KnockoutExtensions
             {
                 if (actor_state->GetLifeState() == ACTOR_LIFE_STATE::kUnconcious)
                 {
-                    
+                    SKSE::log::info("Interacting with {}", actor->GetName()); 
                 }
             }
         }

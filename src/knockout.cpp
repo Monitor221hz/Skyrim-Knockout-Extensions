@@ -13,6 +13,49 @@ namespace KnockoutExtensions
         a_actor->PauseCurrentDialogue(); 
         a_actor->StopInteractingQuick(true);  
     }
+
+    bool KnockoutHandler::CanPassOut(Actor* a_actor)
+    {
+        auto* scene = a_actor->GetCurrentScene(); 
+        if (scene != nullptr && scene->unkB0 == 1) //scene->isRunning
+        {
+            int i = 0; 
+            for(auto formId : scene->actors)
+            {
+                if (formId == a_actor->GetFormID())
+                {
+                    if (!scene->actorFlags[i].any(SCENE_ACTOR_FLAG::kOptional))
+                    {
+                        RE::DebugNotification("Non-optional actors in active Scenes cannot become unconscious.");
+                        return false; 
+                    }
+                }
+                i++; 
+            }
+        } 
+
+        auto& extraList = a_actor->extraList; 
+        if (extraList.HasType(ExtraDataType::kAliasInstanceArray))
+        {
+            auto* extra_ref_alias_array = extraList.GetByType<ExtraAliasInstanceArray>(); 
+            BSReadLockGuard extra_lock(extra_ref_alias_array->lock); 
+            for(auto* extra_alias_instance : extra_ref_alias_array->aliases)
+            {
+                if (!extra_alias_instance->quest->IsRunning()) { continue; }
+                BSReadLockGuard lock(extra_alias_instance->quest->aliasAccessLock); 
+                if (auto* alias = extra_alias_instance->alias)
+                {
+                    if (alias->flags.any(BGSBaseAlias::FLAGS::kReserves) && !alias->flags.any(BGSBaseAlias::FLAGS::kAllowDead))
+                    {
+                        RE::DebugNotification("Reserved actors cannot become unconscious.");
+                        return false; 
+                    }
+                }
+            }
+
+        }
+        return true; 
+    }
     void KnockoutHandler::SetUnconsciousFlags(Actor* a_actor)
     {
         auto* actor_state = a_actor->AsActorState(); 
@@ -21,8 +64,13 @@ namespace KnockoutExtensions
         {
             auto& state1 = actor_state->actorState1; 
             state1.knockState = KNOCK_STATE_ENUM::kDown; 
+            state1.sitSleepState = SIT_SLEEP_STATE::kIsSleeping; 
         }
         rtd.boolFlags.set(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
+        auto& extraList = a_actor->extraList; 
+        extraList.SetExtraFlags(ExtraFlags::Flag::kBlockPlayerActivate, false); 
+        extraList.SetExtraFlags(ExtraFlags::Flag::kBlockPlayerActivate, false); 
+        extraList.SetExtraFlags(ExtraFlags::Flag::kNone, true);
 
         a_actor->SetActivationBlocked(false);
     }
@@ -65,6 +113,7 @@ namespace KnockoutExtensions
         {
             auto& state1 = actor_state->actorState1; 
             state1.knockState = KNOCK_STATE_ENUM::kGetUp; 
+            state1.sitSleepState = SIT_SLEEP_STATE::kNormal; 
         }
         if (a_actor->Is3DLoaded()) 
         { 

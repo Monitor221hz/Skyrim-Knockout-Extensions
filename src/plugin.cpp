@@ -51,6 +51,7 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	KnockoutExtensions::MainUpdateHook::Install();
 	KnockoutExtensions::HitEventHook::Install();
 	KnockoutExtensions::GetUpHook::Install(); 
+	KnockoutExtensions::PlayerActivateHook::Install(); 
 	
     return true;
 }
