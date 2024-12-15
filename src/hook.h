@@ -97,6 +97,7 @@ class MainUpdateHook
         static inline REL::Relocation<decltype(Update)> _Update;
         
         static inline uint32_t framesElapsed = 0; 
+        static inline uint32_t secondsElapsed = 0; 
 };
 class GetUpHook
 {
@@ -131,8 +132,45 @@ class PlayerActivateHook
     private:
         static bool ActivateRef(TESObjectREFR* a_ref, TESObjectREFR* a_activate_trigger, uint8_t a_arg2, TESBoundObject* a_object, int32_t a_count, bool a_defaultProcessingOnly);
         static inline REL::Relocation<decltype(ActivateRef)> _ActivateRef; 
+        static void OpenInventory(TESObjectREFR* a_ref, uint32_t openType)
+        {
+            using func_t = decltype(OpenInventory);
+            REL::Relocation<func_t> func{RELOCATION_ID(50211, 0)};
+            return func(a_ref, openType);
+        }
 
+};
+class IsDeadHook
+{
+    public: 
+    static void Install()
+    {
+        // REL::Relocation<std::uintptr_t> ActorVtbl { VTABLE_Actor[0] }; 
+        // _IsDead = ActorVtbl.write_vfunc(0x99, IsDead); 
+        auto& trampoline = SKSE::GetTrampoline(); 
+        SKSE::AllocTrampoline(14);
+        REL::Relocation<std::uintptr_t> target{ REL::RelocationID( 36484, 35638 ) }; 
+        trampoline.write_branch<5>(target.address(), IsDead); 
 
+        SKSE::log::info("GetDead installed");
+    }
+    private:
+    static bool IsDead(Actor* actor, bool a_notEssential); 
+    // static inline REL::Relocation<decltype(IsDead)> _IsDead; 
+};
+
+class RagdollStateHook
+{
+    public:
+    static void Install()
+    {
+        auto& trampoline = SKSE::GetTrampoline(); 
+        SKSE::AllocTrampoline(14); 
+        REL::Relocation<std::uintptr_t> target { REL::RelocationID(36492, 0) }; 
+        trampoline.write_branch<5>(target.address(), IsInRagdollState);
+    }
+    private:
+    static bool IsInRagdollState(Actor* a_actor); 
 };
 }
 

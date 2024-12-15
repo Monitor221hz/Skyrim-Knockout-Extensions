@@ -46,12 +46,19 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 		return false;
 	}
 	InitializeSerialization();
+	KnockoutExtensions::Settings::Load();
+
 	KnockoutExtensions::UnconsciousFuncHook::Install();
 	KnockoutExtensions::BleedoutStateHook::Install();
 	KnockoutExtensions::MainUpdateHook::Install();
 	KnockoutExtensions::HitEventHook::Install();
-	KnockoutExtensions::GetUpHook::Install(); 
-	KnockoutExtensions::PlayerActivateHook::Install(); 
+
+	// KnockoutExtensions::PlayerActivateHook::Install(); 
+	if (KnockoutExtensions::Settings::GetUnconsciousConsideredDead())
+	{
+		KnockoutExtensions::IsDeadHook::Install(); 
+	}
+	// KnockoutExtensions::RagdollStateHook::Install(); 
 	
     return true;
 }

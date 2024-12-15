@@ -1,5 +1,5 @@
 #include "knockout.h"
-
+#include <limits>
 
 namespace KnockoutExtensions
 {
@@ -63,16 +63,14 @@ namespace KnockoutExtensions
         if (actor_state)
         {
             auto& state1 = actor_state->actorState1; 
-            state1.knockState = KNOCK_STATE_ENUM::kDown; 
+            state1.knockState = KNOCK_STATE_ENUM::kDown;
             state1.sitSleepState = SIT_SLEEP_STATE::kIsSleeping; 
         }
         rtd.boolFlags.set(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
         auto& extraList = a_actor->extraList; 
-        extraList.SetExtraFlags(ExtraFlags::Flag::kBlockPlayerActivate, false); 
-        extraList.SetExtraFlags(ExtraFlags::Flag::kBlockPlayerActivate, false); 
-        extraList.SetExtraFlags(ExtraFlags::Flag::kNone, true);
-
-        a_actor->SetActivationBlocked(false);
+        // extraList.SetExtraFlags(ExtraFlags::Flag::kBlockPlayerActivate, false); 
+        // extraList.SetExtraFlags(ExtraFlags::Flag::kNone, true);
+        // a_actor->SetActivationBlocked(false);
     }
     void KnockoutHandler::ApplyUnconscious(Actor *a_actor)
     {
@@ -81,8 +79,10 @@ namespace KnockoutExtensions
         locker.unlock();
         InterruptAll(a_actor); 
         NiPoint3 actorPos = a_actor->GetPosition();
-        auto& rtd = a_actor->GetActorRuntimeData();
-        ActorUtil::Physics::PushActorAway(rtd.currentProcess, a_actor, &actorPos, 0.00000001f);
+        auto& rtd = a_actor->GetActorRuntimeData(); 
+        a_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
+        ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, std::numeric_limits<float>::min());
+        a_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious);
         SetUnconsciousFlags(a_actor); 
     }
     void KnockoutHandler::ApplyUnconscious(Actor *a_actor, Actor *a_causer)
@@ -90,6 +90,7 @@ namespace KnockoutExtensions
         ReadLocker locker(actorLock);
         if (actorIDMap.count(a_actor->GetFormID()) > 0) { return; }
         locker.unlock();
+        InterruptAll(a_actor); 
         uint64_t witnessCount; 
         auto& rtd = a_actor->GetActorRuntimeData();
         if (ActorUtil::Detection::GetHighestDetectionValue(a_causer, &witnessCount) > 0 && Settings::GetKnockoutIsCrime())
@@ -97,9 +98,10 @@ namespace KnockoutExtensions
             ActorUtil::Detection::SendAssaultAlarm(a_actor, a_causer, false);
             rtd.boolBits.set(Actor::BOOL_BITS::kMurderAlarm);
         }
-        InterruptAll(a_actor); 
         NiPoint3 actorPos = a_causer->GetPosition();
-        ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, 5.f);
+        a_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
+        ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, std::numeric_limits<float>::min());
+        a_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious);
         SetUnconsciousFlags(a_actor); 
     }
     void KnockoutHandler::RecoverUnconscious(Actor *a_actor)
@@ -107,7 +109,6 @@ namespace KnockoutExtensions
         auto& rtd = a_actor->GetActorRuntimeData();
         rtd.boolFlags.reset(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
         rtd.boolBits.reset(Actor::BOOL_BITS::kMurderAlarm);
-   
         auto* actor_state = a_actor->AsActorState(); 
         if (actor_state)
         {
@@ -118,9 +119,14 @@ namespace KnockoutExtensions
         if (a_actor->Is3DLoaded()) 
         { 
             a_actor->Update3DModel(); 
+            // a_actor->DoReset3D(false); 
             a_actor->UpdateActor3DPosition(); 
+            if (auto* model = a_actor->Get3D())
+            {
+                model->SetMaterialNeedsUpdate(true); 
+            }
             NiPoint3 actorPos = a_actor->GetPosition();
-            ActorUtil::Physics::PushActorAway(rtd.currentProcess, a_actor, &actorPos, 0.00000001f);
+            ActorUtil::Physics::PushActorAway(rtd.currentProcess, a_actor, &actorPos, std::numeric_limits<float>::min());
         }
     }
     void KnockoutHandler::TrackActor(Actor *a_actor)
@@ -128,6 +134,7 @@ namespace KnockoutExtensions
         auto *calendar = Calendar::GetSingleton();
         if (!calendar)
         {
+            a_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
             RecoverUnconscious(a_actor);
             return;
         }
@@ -151,12 +158,16 @@ namespace KnockoutExtensions
             if (exactHoursPassed - it.second > duration)
             {
                 markedFormIDs.emplace_back(formID);
-
                 auto* actor = TESForm::LookupByID(formID)->As<Actor>();
-                
+                if (actor == nullptr) { continue; }
+                actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);       
                 RecoverUnconscious(actor); 
-                actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
             }
+            // else 
+            // {
+            //     auto* actor = TESForm::LookupByID(formID)->As<Actor>();
+            //     actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious); 
+            // }
         }
         for (auto formID : markedFormIDs)
         {

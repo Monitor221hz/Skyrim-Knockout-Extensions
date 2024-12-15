@@ -26,6 +26,7 @@ namespace KnockoutExtensions
 
             unconsciousStatusOptions.durationHours = static_cast<float>(ini.GetDoubleValue("Status", "UnconsciousDuration", 8.0));
             unconsciousStatusOptions.isCrime = ini.GetBoolValue("Status", "IsCrime", true);
+            unconsciousStatusOptions.isConsideredDead = ini.GetBoolValue("Status", "IsConsideredDead", true); 
         }
 
         [[nodiscard]] static bool GetTriggerEssentialDown() { return knockoutTriggerOptions.essentialDown; }
@@ -38,6 +39,7 @@ namespace KnockoutExtensions
 
         [[nodiscard]] static bool GetKnockoutIsCrime() { return unconsciousStatusOptions.isCrime; }
 
+        [[nodiscard]] static bool GetUnconsciousConsideredDead() { return unconsciousStatusOptions.isConsideredDead; }
 
         private:
 
@@ -52,6 +54,7 @@ namespace KnockoutExtensions
         {
             float durationHours = 4.0f;
             bool isCrime = true;
+            bool isConsideredDead = true; 
         };
 
 
