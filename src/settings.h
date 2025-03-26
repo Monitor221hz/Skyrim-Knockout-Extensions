@@ -41,6 +41,9 @@ namespace KnockoutExtensions
 
         [[nodiscard]] static bool GetUnconsciousConsideredDead() { return unconsciousStatusOptions.isConsideredDead; }
 
+        [[nodiscard]] static bool GetKnockoutHumanoidOnly() { return knockoutTriggerOptions.humanoidOnly; }
+
+
         private:
 
         struct KnockoutTriggers
@@ -48,6 +51,7 @@ namespace KnockoutExtensions
             bool essentialDown = true;
             bool backBash = true;
             bool bleedoutBash = true;
+            bool humanoidOnly = true; 
         };
 
         struct UnconsciousStatus

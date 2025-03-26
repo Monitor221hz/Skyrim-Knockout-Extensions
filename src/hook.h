@@ -135,7 +135,7 @@ class PlayerActivateHook
         static void OpenInventory(TESObjectREFR* a_ref, uint32_t openType)
         {
             using func_t = decltype(OpenInventory);
-            REL::Relocation<func_t> func{RELOCATION_ID(50211, 0)};
+            REL::Relocation<func_t> func{RELOCATION_ID(50211, 50849)};
             return func(a_ref, openType);
         }
 
@@ -172,6 +172,30 @@ class RagdollStateHook
     private:
     static bool IsInRagdollState(Actor* a_actor); 
 };
+
+class ConcussionStateHook
+{
+    public:
+    static void Install()
+    {
+        REL::Relocation<std::uintptr_t> ConcEffectVtbl { RE::VTABLE_ConcussionEffect[0] }; 
+        // _InitiateGetUpPackage = ActorVtbl.write_vfunc(0xDE, InitiateGetUpPackage); 
+        _Start = ConcEffectVtbl.write_vfunc(0x14, Start); 
+        _Finish = ConcEffectVtbl.write_vfunc(0x15, Finish); 
+        SKSE::log::info("Hook - Concussion State Start/Finish Installed"); 
+    }
+    private:
+    static void Start(ConcussionEffect* a_effect);  // 14
+    static void Finish(ConcussionEffect* a_effect); // 15
+
+    static inline REL::Relocation<decltype(Start)> _Start;
+    static inline REL::Relocation<decltype(Finish)> _Finish; 
+
+
+
+
+
+}; 
 }
 
 

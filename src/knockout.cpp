@@ -17,7 +17,15 @@ namespace KnockoutExtensions
     bool KnockoutHandler::CanPassOut(Actor* a_actor)
     {
         auto* scene = a_actor->GetCurrentScene(); 
-        if (scene != nullptr && scene->unkB0 == 1) //scene->isRunning
+        if (Settings::GetKnockoutHumanoidOnly())
+        {
+            auto bodyPartData = a_actor->GetRace() ? a_actor->GetRace()->bodyPartData : nullptr;
+            if (!bodyPartData || bodyPartData->GetFormID() != 0x1d)
+            {
+                return false; 
+            }
+        }
+        if (scene != nullptr && scene->isPlaying) //scene->isRunning
         {
             int i = 0; 
             for(auto formId : scene->actors)

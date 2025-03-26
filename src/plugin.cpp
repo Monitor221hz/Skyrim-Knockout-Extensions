@@ -52,8 +52,9 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	KnockoutExtensions::BleedoutStateHook::Install();
 	KnockoutExtensions::MainUpdateHook::Install();
 	KnockoutExtensions::HitEventHook::Install();
+	KnockoutExtensions::ConcussionStateHook::Install(); 
 
-	// KnockoutExtensions::PlayerActivateHook::Install(); 
+	KnockoutExtensions::PlayerActivateHook::Install(); 
 	if (KnockoutExtensions::Settings::GetUnconsciousConsideredDead())
 	{
 		KnockoutExtensions::IsDeadHook::Install(); 

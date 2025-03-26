@@ -103,8 +103,7 @@ namespace KnockoutExtensions
             {
                 if (actor_state->GetLifeState() == ACTOR_LIFE_STATE::kUnconcious)
                 {
-                    SKSE::log::info("Interacting with {}", actor->GetName()); 
-                    OpenInventory(actor, 0); 
+                    actor->GetCrimeFaction() != nullptr ? OpenInventory(actor, 0) : OpenInventory(actor, 1); 
                 }
             }
         }
@@ -176,34 +175,52 @@ namespace KnockoutExtensions
         auto* actor_state = a_actor->AsActorState(); 
         return actor_state->GetLifeState() == ACTOR_LIFE_STATE::kUnconcious && actor_state->actorState2.reanimating == 0 && (actor_state->GetKnockState() == KNOCK_STATE_ENUM::kDown || actor_state->GetKnockState() == KNOCK_STATE_ENUM::kOut); 
     }
+    void ConcussionStateHook::Start(ConcussionEffect *a_effect)
+    {
+        auto* target_actor = a_effect->target->GetTargetAsActor();
+        if (!target_actor) { return; }
+
+        target_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious); 
+        KnockoutHandler::ApplyUnconscious(target_actor);
+        _Start(a_effect); 
+    }
+    void ConcussionStateHook::Finish(ConcussionEffect *a_effect)
+    {
+        auto* target_actor = a_effect->target->GetTargetAsActor();
+        if (!target_actor) { return; }
+
+        target_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
+        KnockoutHandler::RecoverUnconscious(target_actor);
+        _Finish(a_effect); 
+    }
     /*
-        enum class ACTOR_LIFE_STATE : std::uint32_t
-        {
-            kAlive = 0, 0000 -> 0000
-            kDying = 1, 0001 -> 0001
-            kDead = 2, 0010 -> 0010
-            kUnconcious = 3, 0011 -> 0010
-            kReanimate = 4, 0100 -> 0000
-            kRecycle = 5, 0101 -> 0000
-            kRestrained = 6, 0110 -> 0010
-            kEssentialDown = 7, 0111 -> 0010
-            kBleedout = 8 1000 -> 1000
-        };
+            enum class ACTOR_LIFE_STATE : std::uint32_t
+            {
+                kAlive = 0, 0000 -> 0000
+                kDying = 1, 0001 -> 0001
+                kDead = 2, 0010 -> 0010
+                kUnconcious = 3, 0011 -> 0010
+                kReanimate = 4, 0100 -> 0000
+                kRecycle = 5, 0101 -> 0000
+                kRestrained = 6, 0110 -> 0010
+                kEssentialDown = 7, 0111 -> 0010
+                kBleedout = 8 1000 -> 1000
+            };
 
-        10101110
-        enum class ACTOR_LIFE_STATE : std::uint32_t
-        {
-            kAlive = 0,
-            kDying = 1, x
-            kDead = 2,x
-            kUnconcious = 3, x
-            kReanimate = 4,
-            kRecycle = 5, x
-            kRestrained = 6,
-            kEssentialDown = 7, x
-            kBleedout = 8
-        };
+            10101110
+            enum class ACTOR_LIFE_STATE : std::uint32_t
+            {
+                kAlive = 0,
+                kDying = 1, x
+                kDead = 2,x
+                kUnconcious = 3, x
+                kReanimate = 4,
+                kRecycle = 5, x
+                kRestrained = 6,
+                kEssentialDown = 7, x
+                kBleedout = 8
+            };
 
 
-    */
+        */
 }
