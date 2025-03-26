@@ -177,20 +177,43 @@ namespace KnockoutExtensions
     }
     void ConcussionStateHook::Start(ConcussionEffect *a_effect)
     {
-        auto* target_actor = a_effect->target->GetTargetAsActor();
-        if (!target_actor) { return; }
+        auto* refr = a_effect->target->GetTargetStatsObject();
+        if (!refr)
+        {
+            return;
+        }
+        auto* target_actor = refr->As<Actor>(); 
 
+        auto* caster = a_effect->GetCasterActor().get(); 
+        if (!target_actor) { return; }
         target_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious); 
-        KnockoutHandler::ApplyUnconscious(target_actor);
+        SKSE::GetTaskInterface()->AddTask(
+            [target_actor, caster](
+            )
+            {
+                KnockoutHandler::ApplyUnconscious(target_actor, caster);
+            }
+        ); 
+
         _Start(a_effect); 
     }
     void ConcussionStateHook::Finish(ConcussionEffect *a_effect)
     {
-        auto* target_actor = a_effect->target->GetTargetAsActor();
+        auto* refr = a_effect->target->GetTargetStatsObject();
+        if (!refr)
+        {
+            return;
+        }
+        auto* target_actor = refr->As<Actor>(); 
         if (!target_actor) { return; }
-
         target_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
-        KnockoutHandler::RecoverUnconscious(target_actor);
+        SKSE::GetTaskInterface()->AddTask(
+            [target_actor](
+            )
+            {
+                KnockoutHandler::RecoverUnconscious(target_actor);
+            }
+        );
         _Finish(a_effect); 
     }
     /*
@@ -223,4 +246,8 @@ namespace KnockoutExtensions
 
 
         */
+    bool ConcussionStateHook::CanFinish(ConcussionEffect *a_effect)
+    {
+        return a_effect->elapsedSeconds * 20.0f > a_effect->duration; 
+    }
 }

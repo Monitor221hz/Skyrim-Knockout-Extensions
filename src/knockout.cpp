@@ -49,7 +49,8 @@ namespace KnockoutExtensions
             BSReadLockGuard extra_lock(extra_ref_alias_array->lock); 
             for(auto* extra_alias_instance : extra_ref_alias_array->aliases)
             {
-                if (!extra_alias_instance->quest->IsRunning()) { continue; }
+                auto* quest = extra_alias_instance->quest;
+                if (!quest->IsRunning() || quest->GetType() != QUEST_DATA::Type::kMainQuest) { continue; }
                 BSReadLockGuard lock(extra_alias_instance->quest->aliasAccessLock); 
                 if (auto* alias = extra_alias_instance->alias)
                 {

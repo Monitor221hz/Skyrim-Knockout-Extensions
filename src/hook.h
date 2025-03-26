@@ -182,14 +182,17 @@ class ConcussionStateHook
         // _InitiateGetUpPackage = ActorVtbl.write_vfunc(0xDE, InitiateGetUpPackage); 
         _Start = ConcEffectVtbl.write_vfunc(0x14, Start); 
         _Finish = ConcEffectVtbl.write_vfunc(0x15, Finish); 
+        _CanFinish = ConcEffectVtbl.write_vfunc(0x16, CanFinish); 
         SKSE::log::info("Hook - Concussion State Start/Finish Installed"); 
     }
     private:
     static void Start(ConcussionEffect* a_effect);  // 14
     static void Finish(ConcussionEffect* a_effect); // 15
+    static bool CanFinish(ConcussionEffect* a_effect); //16
 
     static inline REL::Relocation<decltype(Start)> _Start;
     static inline REL::Relocation<decltype(Finish)> _Finish; 
+    static inline REL::Relocation<decltype(CanFinish)> _CanFinish;
 
 
 
