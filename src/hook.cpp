@@ -248,6 +248,8 @@ namespace KnockoutExtensions
         */
     bool ConcussionStateHook::CanFinish(ConcussionEffect *a_effect)
     {
-        return a_effect->elapsedSeconds * 20.0f > a_effect->duration; 
+        auto* calendar = Calendar::GetSingleton(); 
+        float timescale = calendar ? calendar->GetTimescale() : 20.f; 
+        return a_effect->elapsedSeconds * timescale > a_effect->duration; 
     }
 }
