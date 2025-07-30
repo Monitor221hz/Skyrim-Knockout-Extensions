@@ -103,7 +103,13 @@ namespace KnockoutExtensions
             {
                 if (actor_state->GetLifeState() == ACTOR_LIFE_STATE::kUnconcious)
                 {
-                    actor->GetCrimeFaction() != nullptr ? OpenInventory(actor, 0) : OpenInventory(actor, 1); 
+                    if (actor->GetCrimeFaction())
+                    {
+                        OpenInventory(actor, 0); 
+                        return true;
+                    }
+                    OpenInventory(actor, 1);
+                    return true;
                 }
             }
         }
