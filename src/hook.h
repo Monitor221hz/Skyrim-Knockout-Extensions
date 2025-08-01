@@ -17,7 +17,7 @@ class UnconsciousFuncHook
         SKSE::AllocTrampoline(32);
 
         //SE GameFunc__handler__SetUnconscious_1402FFAF0+C8	call    SetUnconscious_1405E32A0
-        //AE sub_140314500+C8	call    sub_140608F50
+        //Up	p	sub_1403564C0+C8	call    sub_140675040
         REL::Relocation<std::uintptr_t> enableTarget{ REL::RelocationID(21874, 22356) , REL::Relocate(0xC8, 0xC8) };
 
         //SE GameFunc__handler__SetUnconscious_1402FFAF0+120	call    SetUnconscious_1405E32A0
@@ -46,12 +46,12 @@ class BleedoutStateHook
     static void Install()
     {
             //SE Actor__KillImpl_140603B30+6C4	call    Actor__SetLifeState_1405EDEF0
-            //AE sub_14062B1E0+F78	call    sub_140614650
+            //AE p	sub_1406972D0+739	call    sub_140680740
         auto& trampoline = SKSE::GetTrampoline(); 
 
         SKSE::AllocTrampoline(16);
 
-        REL::Relocation<std::uintptr_t> target{ REL::RelocationID(36872, 37896), REL::Relocate(0x6C4, 0xF78)} ; 
+        REL::Relocation<std::uintptr_t> target{ REL::RelocationID(36872, 37896), REL::Relocate(0x6C4, 0x739)} ; 
         _SetLifeState = trampoline.write_call<5>(target.address(), SetLifeState);
     }
     private: 
