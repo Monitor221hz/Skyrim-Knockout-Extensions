@@ -8,18 +8,24 @@ namespace KnockoutExtensions
 
     void HitEventHook::ProcessHitEvent(TESObjectREFR *a_target, HitData *a_hitData)
     {
-        if (!a_target || !a_hitData || a_target->GetFormType() != FormType::ActorCharacter || !a_hitData->flags.any(HitData::Flag::kBash)) { return _ProcessHitEvent(a_target, a_hitData); }
-        
+        if (!a_target || !a_hitData || a_target->GetFormType() != FormType::ActorCharacter) { return _ProcessHitEvent(a_target, a_hitData); }
+        auto* attacker = a_hitData->aggressor.get().get();
         auto* target_actor = a_target->As<Actor>();
-        if (target_actor->IsPlayerRef() || !KnockoutHandler::CanPassOut(target_actor)) { return _ProcessHitEvent(a_target, a_hitData); }
-
+        if (!attacker || target_actor->IsPlayerRef() || !KnockoutHandler::CanPassOut(target_actor)) { return _ProcessHitEvent(a_target, a_hitData); }
+        if ((a_hitData->weapon != nullptr && a_hitData->weapon->GetWeaponType() == WEAPON_TYPE::kHandToHandMelee) && !a_hitData->flags.any(HitData::Flag::kPowerAttack) && a_hitData->flags.any(HitData::Flag::kFatal))
+        {
+            a_hitData->totalDamage = 0.0f;
+            target_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious); 
+            KnockoutHandler::ApplyUnconscious(target_actor, attacker);
+            KnockoutHandler::TrackActor(target_actor);
+            SKSE::log::info("KO! {}", target_actor->GetName());
+            return _ProcessHitEvent(a_target, a_hitData);
+        }
+        if (!a_hitData->flags.any(HitData::Flag::kBash)) { return _ProcessHitEvent(a_target, a_hitData); }
         auto* targetState = target_actor->AsActorState();
         bool inBleedout = targetState ? targetState->GetLifeState() == ACTOR_LIFE_STATE::kBleedout : false;
 
         if (target_actor->IsInCombat() && !inBleedout) { return _ProcessHitEvent(a_target, a_hitData); }
-
-        auto* attacker = a_hitData->aggressor.get().get();
-        if (!attacker) { return _ProcessHitEvent(a_target, a_hitData); }
         
         bool arg2;
         bool hasLOS = target_actor->HasLineOfSight(attacker,arg2);
@@ -27,7 +33,7 @@ namespace KnockoutExtensions
 
         if ((hasLOS || !Settings::GetTriggerBackBash()) && (!inBleedout || !Settings::GetTriggerBleedoutBash())) { return _ProcessHitEvent(a_target, a_hitData); }
         a_hitData->totalDamage = 0.0f;
-        a_hitData->flags.set(HitData::Flag::kSneakAttack);
+        // a_hitData->flags.set(HitData::Flag::kSneakAttack);
         target_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious); 
 
         KnockoutHandler::ApplyUnconscious(target_actor, attacker);

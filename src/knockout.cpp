@@ -16,6 +16,7 @@ namespace KnockoutExtensions
 
     bool KnockoutHandler::CanPassOut(Actor* a_actor)
     {
+        if (a_actor->AsActorState() && a_actor->AsActorState()->GetLifeState() == ACTOR_LIFE_STATE::kUnconcious) { return false; }
         auto* scene = a_actor->GetCurrentScene(); 
         if (Settings::GetKnockoutHumanoidOnly())
         {
@@ -56,7 +57,7 @@ namespace KnockoutExtensions
                 {
                     if (alias->flags.any(BGSBaseAlias::FLAGS::kReserves) && !alias->flags.any(BGSBaseAlias::FLAGS::kAllowDead))
                     {
-                        RE::DebugNotification("Reserved actors cannot become unconscious.");
+                        RE::DebugNotification("Reserved, death disallowed actors cannot be unconscious to prevent breaking quests.");
                         return false; 
                     }
                 }
