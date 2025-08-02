@@ -25,13 +25,15 @@ namespace KnockoutExtensions
 
             static void UpdateTrackedActors();
 
-
+            static void SyncTime(); 
             static void TrackActor(Actor* a_actor);
             static void UntrackActor(Actor* a_actor);
-            
+            static void PopulateOnLoad(); 
+            static void ClearOnLoad(); 
             static void GameSaveCallback(SKSE::SerializationInterface* serde);
             static void GameLoadCallback(SKSE::SerializationInterface* serde);
             static void GameRevertCallback(SKSE::SerializationInterface* serde);
+            static void FormDeleteCallback(RE::VMHandle handle); 
         private:
             using Lock = std::shared_mutex;
             using ReadLocker = std::shared_lock<Lock>;
@@ -41,6 +43,7 @@ namespace KnockoutExtensions
 
             static inline std::unordered_map<FormID, float> actorIDMap; 
 
+            static inline float lastHoursPassed = 0.f; 
             
 
             static bool GameSave(SKSE::SerializationInterface* serde);
@@ -52,4 +55,5 @@ namespace KnockoutExtensions
             static void InterruptAll(Actor* a_actor);
             static void SetUnconsciousFlags(Actor *a_actor);
     };
+
 }

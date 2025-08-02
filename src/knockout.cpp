@@ -78,6 +78,7 @@ namespace KnockoutExtensions
         }
         rtd.boolFlags.set(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
         auto& extraList = a_actor->extraList; 
+        // a_actor->AddChange(Actor::ChangeFlags::kLifeState);
         // extraList.SetExtraFlags(ExtraFlags::Flag::kBlockPlayerActivate, false); 
         // extraList.SetExtraFlags(ExtraFlags::Flag::kNone, true);
         // a_actor->SetActivationBlocked(false);
@@ -89,10 +90,13 @@ namespace KnockoutExtensions
         locker.unlock();
         InterruptAll(a_actor); 
         NiPoint3 actorPos = a_actor->GetPosition();
-        auto& rtd = a_actor->GetActorRuntimeData(); 
-        a_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
-        ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, std::numeric_limits<float>::min());
-        a_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious);
+        auto& rtd = a_actor->GetActorRuntimeData();
+        if (a_actor->Is3DLoaded())
+        {
+            a_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
+            ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, std::numeric_limits<float>::min());
+            a_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious);
+        }
         SetUnconsciousFlags(a_actor); 
     }
     void KnockoutHandler::ApplyUnconscious(Actor *a_actor, Actor *a_causer)
@@ -108,10 +112,13 @@ namespace KnockoutExtensions
             ActorUtil::Detection::SendAssaultAlarm(a_actor, a_causer, false);
             rtd.boolBits.set(Actor::BOOL_BITS::kMurderAlarm);
         }
-        NiPoint3 actorPos = a_causer->GetPosition();
-        a_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
-        ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, std::numeric_limits<float>::min());
-        a_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious);
+        if (a_actor->Is3DLoaded())
+        {
+            NiPoint3 actorPos = a_causer->GetPosition();
+            a_actor->SetLifeState(ACTOR_LIFE_STATE::kAlive);
+            ActorUtil::Physics::PushActorAway(a_actor->GetActorRuntimeData().currentProcess, a_actor, &actorPos, std::numeric_limits<float>::min());
+            a_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious);
+        }
         SetUnconsciousFlags(a_actor); 
     }
     void KnockoutHandler::RecoverUnconscious(Actor *a_actor)
@@ -139,6 +146,14 @@ namespace KnockoutExtensions
             ActorUtil::Physics::PushActorAway(rtd.currentProcess, a_actor, &actorPos, std::numeric_limits<float>::min());
         }
     }
+    void KnockoutHandler::SyncTime()
+    {
+        auto* calendar = Calendar::GetSingleton();
+        if (calendar)
+        {
+            lastHoursPassed = calendar->GetHoursPassed(); 
+        }
+    }
     void KnockoutHandler::TrackActor(Actor *a_actor)
     {
         auto *calendar = Calendar::GetSingleton();
@@ -151,21 +166,23 @@ namespace KnockoutExtensions
         float exactHoursPassed = calendar->GetHoursPassed();
         
         WriteLocker locker(actorLock); 
-        actorIDMap.emplace(a_actor->GetFormID(), exactHoursPassed);
+        actorIDMap.emplace(a_actor->GetFormID(), Settings::GetUnconsciousDuration());
     }
     void KnockoutHandler::UpdateTrackedActors()
     {
         WriteLocker locker(actorLock);
-
         auto* calendar = Calendar::GetSingleton(); 
         if (!calendar) { return; }
         float exactHoursPassed = calendar->GetHoursPassed();
+        float timeDiff = exactHoursPassed - lastHoursPassed; 
+        lastHoursPassed = exactHoursPassed; 
         float duration = Settings::GetUnconsciousDuration();
         std::vector<FormID> markedFormIDs;
         for(auto& it : actorIDMap)
         {
             auto formID = it.first; 
-            if (exactHoursPassed - it.second > duration)
+            it.second -= timeDiff;
+            if (it.second <= 0.f)
             {
                 markedFormIDs.emplace_back(formID);
                 auto* actor = TESForm::LookupByID(formID)->As<Actor>();
@@ -183,13 +200,32 @@ namespace KnockoutExtensions
         {
             actorIDMap.erase(formID);
         }
-
     }
 
     void KnockoutHandler::UntrackActor(Actor* a_actor)
     {
         WriteLocker locker(actorLock);
         actorIDMap.erase(a_actor->GetFormID());
+    }
+
+    void KnockoutHandler::PopulateOnLoad()
+    {
+
+        auto* processLists = ProcessLists::GetSingleton();
+        auto* map = &actorIDMap;
+        processLists->ForAllActors([map](Actor* actor) -> BSContainer::ForEachResult {
+            auto* actorState = actor->AsActorState(); 
+            if (!actorState || actorState->GetLifeState() != ACTOR_LIFE_STATE::kUnconcious || !actorIDMap.emplace(actor->GetFormID(), Settings::GetUnconsciousDuration()).second) { BSContainer::ForEachResult::kContinue; }
+            SKSE::log::info("Loaded unconscious actor {}", actor->GetFormID());
+            // ApplyUnconscious(actor); 
+            return BSContainer::ForEachResult::kContinue;
+        });
+    }
+
+    void KnockoutHandler::ClearOnLoad()
+    {
+        WriteLocker locker(actorLock); 
+        actorIDMap.clear();
     }
 
     bool KnockoutHandler::GameSave(SKSE::SerializationInterface *serde)
@@ -304,5 +340,10 @@ namespace KnockoutExtensions
     void KnockoutHandler::GameRevertCallback(SKSE::SerializationInterface *serde)
     {
         GameRevert(serde);
+    }
+    void KnockoutHandler::FormDeleteCallback(RE::VMHandle handle)
+    {
+        // WriteLocker locker(actorLock);
+        // actorIDMap.erase(handle)
     }
 }

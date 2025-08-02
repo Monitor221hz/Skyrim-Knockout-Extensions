@@ -10,6 +10,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 {
 	switch (a_msg->type) {
 	case SKSE::MessagingInterface::kDataLoaded:
+		KnockoutExtensions::KnockoutHandler::SyncTime();
         KnockoutExtensions::Settings::Load();
 		break;
 	case SKSE::MessagingInterface::kPostLoad:
@@ -17,10 +18,14 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kPreLoadGame:
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
+		KnockoutExtensions::KnockoutHandler::SyncTime();
 		KnockoutExtensions::Settings::Load();
+		KnockoutExtensions::KnockoutHandler::PopulateOnLoad();
         break;
 	case SKSE::MessagingInterface::kNewGame:
+		KnockoutExtensions::KnockoutHandler::SyncTime();
 		KnockoutExtensions::Settings::Load();
+		KnockoutExtensions::KnockoutHandler::ClearOnLoad();
 		break;
 	}
 }
@@ -32,6 +37,7 @@ void InitializeSerialization()
 	serde->SetSaveCallback(KnockoutExtensions::KnockoutHandler::GameSaveCallback);
 	serde->SetRevertCallback(KnockoutExtensions::KnockoutHandler::GameRevertCallback);
 	serde->SetLoadCallback(KnockoutExtensions::KnockoutHandler::GameLoadCallback);
+	serde->SetFormDeleteCallback(KnockoutExtensions::KnockoutHandler::FormDeleteCallback);
 	SKSE::log::trace("Cosave serialization initialized.");
 }
 
@@ -45,7 +51,7 @@ SKSEPluginLoad(const SKSE::LoadInterface *skse) {
 	if (!messaging->RegisterListener("SKSE", MessageHandler)) {
 		return false;
 	}
-	InitializeSerialization();
+	// InitializeSerialization();
 	KnockoutExtensions::Settings::Load();
 
 	KnockoutExtensions::UnconsciousFuncHook::Install();
