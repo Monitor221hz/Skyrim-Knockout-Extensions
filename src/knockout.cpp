@@ -107,6 +107,11 @@ namespace KnockoutExtensions
         InterruptAll(a_actor); 
         uint64_t witnessCount; 
         auto& rtd = a_actor->GetActorRuntimeData();
+        if (!a_actor->IsActivationBlocked())
+        {
+            a_actor->SetActivationBlocked(true);
+        }
+
         if (ActorUtil::Detection::GetHighestDetectionValue(a_causer, &witnessCount) > 0 && Settings::GetKnockoutIsCrime())
         {
             ActorUtil::Detection::SendAssaultAlarm(a_actor, a_causer, false);
@@ -123,6 +128,10 @@ namespace KnockoutExtensions
     }
     void KnockoutHandler::RecoverUnconscious(Actor *a_actor)
     {
+        if (a_actor->IsActivationBlocked())
+        {
+            a_actor->SetActivationBlocked(false);
+        }
         auto& rtd = a_actor->GetActorRuntimeData();
         rtd.boolFlags.reset(Actor::BOOL_FLAGS::kDoNotShowOnStealthMeter);
         rtd.boolBits.reset(Actor::BOOL_BITS::kMurderAlarm);
