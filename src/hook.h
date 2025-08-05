@@ -145,18 +145,18 @@ class IsDeadHook
     public: 
     static void Install()
     {
-        // REL::Relocation<std::uintptr_t> ActorVtbl { VTABLE_Actor[0] }; 
-        // _IsDead = ActorVtbl.write_vfunc(0x99, IsDead); 
-        auto& trampoline = SKSE::GetTrampoline(); 
-        SKSE::AllocTrampoline(14);
-        REL::Relocation<std::uintptr_t> target{ REL::RelocationID( 36484, 35638 ) }; 
-        trampoline.write_branch<5>(target.address(), IsDead); 
+        REL::Relocation<std::uintptr_t> ActorVtbl { VTABLE_Character[0] }; 
+        _IsDead = ActorVtbl.write_vfunc(0x99, IsDead); 
+        // auto& trampoline = SKSE::GetTrampoline(); 
+        // SKSE::AllocTrampoline(14);
+        // REL::Relocation<std::uintptr_t> target{ REL::RelocationID( 36484, 35638 ) }; 
+        // trampoline.write_branch<5>(target.address(), IsDead); 
 
         SKSE::log::info("GetDead installed");
     }
     private:
     static bool IsDead(Actor* actor, bool a_notEssential); 
-    // static inline REL::Relocation<decltype(IsDead)> _IsDead; 
+    static inline REL::Relocation<decltype(IsDead)> _IsDead; 
 };
 
 class RagdollStateHook
