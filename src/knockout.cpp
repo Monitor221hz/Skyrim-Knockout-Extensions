@@ -16,7 +16,6 @@ namespace KnockoutExtensions
 
     bool KnockoutHandler::CanPassOut(Actor* a_actor)
     {
-        if (a_actor->AsActorState() && a_actor->AsActorState()->GetLifeState() == ACTOR_LIFE_STATE::kUnconcious) { return false; }
         auto* scene = a_actor->GetCurrentScene(); 
         if (Settings::GetKnockoutHumanoidOnly())
         {

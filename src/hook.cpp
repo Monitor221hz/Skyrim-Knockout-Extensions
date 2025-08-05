@@ -9,16 +9,27 @@ namespace KnockoutExtensions
     void HitEventHook::ProcessHitEvent(TESObjectREFR *a_target, HitData *a_hitData)
     {
         if (!a_target || !a_hitData || a_target->GetFormType() != FormType::ActorCharacter) { return _ProcessHitEvent(a_target, a_hitData); }
+
         auto* attacker = a_hitData->aggressor.get().get();
         auto* target_actor = a_target->As<Actor>();
+
         if (!attacker || target_actor->IsPlayerRef() || !KnockoutHandler::CanPassOut(target_actor)) { return _ProcessHitEvent(a_target, a_hitData); }
+        
+        auto* target_state = target_actor->AsActorState(); 
+        if (target_state && target_state->GetLifeState() == ACTOR_LIFE_STATE::kUnconcious) 
+        { 
+            a_hitData->totalDamage = 0.f; 
+            a_hitData->flags.set(HitData::Flag::kBlocked);
+            a_hitData->skill = RE::ActorValue::kNone; 
+            return; 
+        } // don't react to hits while down
+
         if ((a_hitData->weapon != nullptr && a_hitData->weapon->GetWeaponType() == WEAPON_TYPE::kHandToHandMelee) && !a_hitData->flags.any(HitData::Flag::kPowerAttack) && a_hitData->flags.any(HitData::Flag::kFatal))
         {
             a_hitData->totalDamage = 0.0f;
             target_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious); 
             KnockoutHandler::ApplyUnconscious(target_actor, attacker);
             KnockoutHandler::TrackActor(target_actor);
-            SKSE::log::info("KO! {}", target_actor->GetName());
             return _ProcessHitEvent(a_target, a_hitData);
         }
         if (!a_hitData->flags.any(HitData::Flag::kBash)) { return _ProcessHitEvent(a_target, a_hitData); }
