@@ -199,6 +199,15 @@ class ConcussionStateHook
 
 
 }; 
+
+/*
+
+Direction	Type	Address	Text
+	p	TESFurniture__Activate_14021A4B0+160	call    Actor__sub_14069D2C0
+Down	p	sub_1408BDE30+6A	call    Actor__sub_14069D2C0
+Down	o	.rdata:stru_141B4D438	IPtoStateMap <rva Actor__sub_14069D2C0, -1>
+Down	o	.pdata:00000001435076CC	RUNTIME_FUNCTION <rva Actor__sub_14069D2C0, rva algn_14069D6DA, \
+*/
 }
 
 

@@ -24,7 +24,7 @@ namespace KnockoutExtensions
             return; 
         } // don't react to hits while down
 
-        if ((a_hitData->weapon != nullptr && a_hitData->weapon->GetWeaponType() == WEAPON_TYPE::kHandToHandMelee) && !a_hitData->flags.any(HitData::Flag::kPowerAttack) && a_hitData->flags.any(HitData::Flag::kFatal))
+        if (Settings::GetTriggerBrawl() && (a_hitData->weapon != nullptr && a_hitData->weapon->GetWeaponType() == WEAPON_TYPE::kHandToHandMelee) && !a_hitData->flags.any(HitData::Flag::kPowerAttack) && a_hitData->flags.any(HitData::Flag::kFatal))
         {
             a_hitData->totalDamage = 0.0f;
             target_actor->SetLifeState(ACTOR_LIFE_STATE::kUnconcious); 

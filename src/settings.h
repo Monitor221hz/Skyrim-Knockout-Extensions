@@ -23,10 +23,13 @@ namespace KnockoutExtensions
             knockoutTriggerOptions.backBash = ini.GetBoolValue("Triggers", "BackBash", true);
             knockoutTriggerOptions.bleedoutBash = ini.GetBoolValue("Triggers", "BleedoutBash", true);
             knockoutTriggerOptions.essentialDown = ini.GetBoolValue("Triggers", "EssentialDown", true);
+            knockoutTriggerOptions.humanoidOnly = ini.GetBoolValue("Triggers", "HumanoidOnly", true);
+            knockoutTriggerOptions.brawlKnockouts = ini.GetBoolValue("Triggers", "BrawlKnockouts", true); 
 
             unconsciousStatusOptions.durationHours = static_cast<float>(ini.GetDoubleValue("Status", "UnconsciousDuration", 8.0));
             unconsciousStatusOptions.isCrime = ini.GetBoolValue("Status", "IsCrime", true);
             unconsciousStatusOptions.isConsideredDead = ini.GetBoolValue("Status", "IsConsideredDead", true); 
+
         }
 
         [[nodiscard]] static bool GetTriggerEssentialDown() { return knockoutTriggerOptions.essentialDown; }
@@ -34,6 +37,8 @@ namespace KnockoutExtensions
         [[nodiscard]] static bool GetTriggerBackBash() { return knockoutTriggerOptions.backBash; }
 
         [[nodiscard]] static bool GetTriggerBleedoutBash() { return knockoutTriggerOptions.backBash; }
+
+        [[nodiscard]] static bool GetTriggerBrawl() { return knockoutTriggerOptions.brawlKnockouts; }
 
         [[nodiscard]] static float GetUnconsciousDuration() { return unconsciousStatusOptions.durationHours; }
 
@@ -52,6 +57,7 @@ namespace KnockoutExtensions
             bool backBash = true;
             bool bleedoutBash = true;
             bool humanoidOnly = true; 
+            bool brawlKnockouts = true; 
         };
 
         struct UnconsciousStatus
