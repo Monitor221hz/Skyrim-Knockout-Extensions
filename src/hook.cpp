@@ -122,10 +122,16 @@ namespace KnockoutExtensions
                 {
                     if (actor->GetCrimeFaction())
                     {
-                        OpenInventory(actor, 0); 
+                       // OpenInventory(actor, 0); 
+                        //This was causing crashes; replaced with RE::TESObjectREFR::OpenContainer(int type)
+                        //0 is normal open container (no stealing)
+                        //1 is stealing
+                        actor->OpenContainer(1);
                         return true;
                     }
-                    OpenInventory(actor, 1);
+                    //OpenInventory(actor, 1);
+                    //same as above
+                    actor->OpenContainer(0);
                     return true;
                 }
             }
